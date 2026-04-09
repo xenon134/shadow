@@ -3,11 +3,10 @@ import struct
 import sys
 import json
 
-import cv2  # pip install opencv-python
 import av  # pip install av
-import numpy as np  # pip install numpy
 
 import PILutils
+from client_viewer import Viewer
 
 class Connection:
     def __init__(self):
@@ -71,6 +70,7 @@ def handle_metadata(metadata):
 
 # 2. Decoder Setup (The Black Box)
 decoder = av.CodecContext.create('h264', 'r')
+viewer = Viewer()
 
 try:
     while True:
@@ -91,15 +91,12 @@ try:
             # PyAV handles the YUV back to BGR numpy array conversion
             img = PILutils.Image.fromarray(frame.to_ndarray(format='rgb24'))
             img = PILutils.resize(img, 0.5)
-            img_cv2 = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
             
-            # Display the result
-            cv2.imshow("Remote Desktop", img_cv2)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                raise KeyboardInterrupt
+            # Update the viewer with the new image
+            viewer.update_image(img)
 
 except (ConnectionResetError, KeyboardInterrupt):
     print("Connection closed.")
+    viewer.close()
 finally:
     client_conn.close()
-    cv2.destroyAllWindows()
